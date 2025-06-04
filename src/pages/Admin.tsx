@@ -1,9 +1,10 @@
-
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { DollarSign, ShoppingCart, Package, TrendingUp, Download } from 'lucide-react';
+import AddCashierForm from '../components/AddCashierForm';
+import CashierList from '../components/CashierList';
 
 const Admin = () => {
   const { sales, products } = useStore();
@@ -79,6 +80,12 @@ const Admin = () => {
           <Download size={18} />
           <span>Export Data</span>
         </button>
+      </div>
+
+      {/* Cashier Management Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <AddCashierForm />
+        <CashierList />
       </div>
 
       {/* Metrics Cards */}

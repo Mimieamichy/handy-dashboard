@@ -25,12 +25,23 @@ export interface Sale {
   timestamp: Date;
 }
 
+export interface Cashier {
+  id: string;
+  name: string;
+  password: string;
+  createdAt: Date;
+}
+
 interface StoreState {
   // Auth
   currentRole: 'admin' | 'cashier';
   cashierName: string;
   setRole: (role: 'admin' | 'cashier') => void;
   setCashierName: (name: string) => void;
+  
+  // Cashiers
+  cashiers: Cashier[];
+  addCashier: (cashier: Omit<Cashier, 'id' | 'createdAt'>) => void;
   
   // Products
   products: Product[];
@@ -92,12 +103,38 @@ const initialSales: Sale[] = [
   }
 ];
 
+// Initial cashiers data
+const initialCashiers: Cashier[] = [
+  {
+    id: '1',
+    name: 'John Doe',
+    password: 'password123',
+    createdAt: new Date(Date.now() - 86400000 * 7) // 7 days ago
+  },
+  {
+    id: '2',
+    name: 'Jane Smith',
+    password: 'password456',
+    createdAt: new Date(Date.now() - 86400000 * 3) // 3 days ago
+  }
+];
+
 export const useStore = create<StoreState>((set, get) => ({
   // Auth
   currentRole: 'cashier',
   cashierName: 'John Doe',
   setRole: (role) => set({ currentRole: role }),
   setCashierName: (name) => set({ cashierName: name }),
+  
+  // Cashiers
+  cashiers: initialCashiers,
+  addCashier: (cashier) => set((state) => ({
+    cashiers: [...state.cashiers, { 
+      ...cashier, 
+      id: Date.now().toString(),
+      createdAt: new Date()
+    }]
+  })),
   
   // Products
   products: initialProducts,
