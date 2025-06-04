@@ -5,7 +5,7 @@ import { Search, Package, Plus } from 'lucide-react';
 import AddProductForm from '../components/AddProductForm';
 
 const Catalog = () => {
-  const { products, currentRole } = useStore();
+  const { products, currentRole, addToCart } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -22,6 +22,16 @@ const Catalog = () => {
     if (stock === 0) return { color: 'text-red-600 bg-red-50', label: 'Out of Stock' };
     if (stock < 10) return { color: 'text-yellow-600 bg-yellow-50', label: 'Low Stock' };
     return { color: 'text-green-600 bg-green-50', label: 'In Stock' };
+  };
+
+  const handleAddToCart = (product: any) => {
+    addToCart({
+      productId: product.id,
+      productName: product.name,
+      price: 0, // Default price, cashier will set this in checkout
+      quantity: 1
+    });
+    alert(`${product.name} added to cart!`);
   };
 
   return (
@@ -104,7 +114,10 @@ const Catalog = () => {
                 </div>
 
                 {currentRole === 'cashier' && product.stock > 0 && (
-                  <button className="w-full mt-4 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                  <button 
+                    onClick={() => handleAddToCart(product)}
+                    className="w-full mt-4 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                  >
                     Add to Cart
                   </button>
                 )}
