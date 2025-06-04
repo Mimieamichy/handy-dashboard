@@ -2,11 +2,13 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { Search, Package, Plus } from 'lucide-react';
+import AddProductForm from '../components/AddProductForm';
 
 const Catalog = () => {
   const { products, currentRole } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const categories = ['all', ...Array.from(new Set(products.map(p => p.category)))];
 
@@ -31,12 +33,22 @@ const Catalog = () => {
           <p className="text-gray-600">Browse and manage your inventory</p>
         </div>
         {currentRole === 'admin' && (
-          <button className="mt-4 sm:mt-0 flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+          <button 
+            onClick={() => setShowAddForm(true)}
+            className="mt-4 sm:mt-0 flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
             <Plus size={18} />
             <span>Add Product</span>
           </button>
         )}
       </div>
+
+      {/* Add Product Form */}
+      {showAddForm && (
+        <div className="mb-6">
+          <AddProductForm onClose={() => setShowAddForm(false)} />
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
