@@ -1,0 +1,292 @@
+
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useStore } from '../store/useStore';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+import { ShoppingCart, Plus, Trash, Minus } from 'lucide-react';
+
+const schema = yup.object({
+  price: yup.number().positive('Price must be positive').required('Price is required'),
+  quantity: yup.number().positive('Quantity must be positive').integer('Quantity must be a whole number').required('Quantity is required'),
+});
+
+const Checkout = () => {
+  const navigate = useNavigate();
+  const { 
+    products, 
+    cart, 
+    addToCart, 
+    updateCartItem, 
+    removeFromCart, 
+    clearCart, 
+    completeSale, 
+    setCurrentSale, 
+    cashierName 
+  } = useStore();
+  
+  const [selectedProductId, setSelectedProductId] = useState('');
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
+
+  const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm({
+    resolver: yupResolver(schema),
+    defaultValues: { price: 0, quantity: 1 }
+  });
+
+  const availableProducts = products.filter(p => p.stock > 0);
+
+  const onAddProduct = (data: { price: number; quantity: number }) => {
+    if (!selectedProductId) return;
+    
+    const product = products.find(p => p.id === selectedProductId);
+    if (!product) return;
+
+    addToCart({
+      productId: product.id,
+      productName: product.name,
+      price: data.price,
+      quantity: data.quantity
+    });
+
+    reset();
+    setSelectedProductId('');
+    setIsAddingProduct(false);
+  };
+
+  const updateQuantity = (productId: string, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+    updateCartItem(productId, { quantity: newQuantity });
+  };
+
+  const updatePrice = (productId: string, newPrice: number) => {
+    if (newPrice >= 0) {
+      updateCartItem(productId, { price: newPrice });
+    }
+  };
+
+  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const taxRate = 0.08; // 8% tax
+  const tax = subtotal * taxRate;
+  const total = subtotal + tax;
+
+  const handleCompleteSale = () => {
+    if (cart.length === 0) return;
+
+    const sale = {
+      items: [...cart],
+      subtotal,
+      tax,
+      total,
+      cashier: cashierName,
+      timestamp: new Date()
+    };
+
+    completeSale(sale);
+    setCurrentSale({ ...sale, id: Date.now().toString() });
+    clearCart();
+    navigate('/receipt');
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Product Selection */}
+      <div className="lg:col-span-2 space-y-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Add Products</h2>
+          
+          {!isAddingProduct ? (
+            <button
+              onClick={() => setIsAddingProduct(true)}
+              className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus size={18} />
+              <span>Add Product to Cart</span>
+            </button>
+          ) : (
+            <form onSubmit={handleSubmit(onAddProduct)} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Product</label>
+                <select
+                  value={selectedProductId}
+                  onChange={(e) => setSelectedProductId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+                  <option value="">Select a product</option>
+                  {availableProducts.map(product => (
+                    <option key={product.id} value={product.id}>
+                      {product.name} (Stock: {product.stock})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    {...register('price')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="0.00"
+                  />
+                  {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price.message}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                  <input
+                    type="number"
+                    {...register('quantity')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="1"
+                  />
+                  {errors.quantity && <p className="text-red-500 text-sm mt-1">{errors.quantity.message}</p>}
+                </div>
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  type="submit"
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Add to Cart
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddingProduct(false);
+                    reset();
+                    setSelectedProductId('');
+                  }}
+                  className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+
+        {/* Cart Items */}
+        {cart.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Cart Items</h2>
+            <div className="space-y-4">
+              {cart.map(item => (
+                <div key={item.productId} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-900">{item.productName}</h3>
+                    <div className="mt-2 grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Price ($)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={item.price}
+                          onChange={(e) => updatePrice(item.productId, parseFloat(e.target.value) || 0)}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Quantity</label>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                            className="p-1 text-gray-500 hover:text-gray-700"
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => updateQuantity(item.productId, parseInt(e.target.value) || 0)}
+                            className="w-16 px-2 py-1 text-sm text-center border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                          />
+                          <button
+                            onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                            className="p-1 text-gray-500 hover:text-gray-700"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="ml-4 text-right">
+                    <p className="text-lg font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
+                    <button
+                      onClick={() => removeFromCart(item.productId)}
+                      className="mt-2 text-red-500 hover:text-red-700"
+                    >
+                      <Trash size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Order Summary */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-fit">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+          <ShoppingCart size={20} />
+          <span>Order Summary</span>
+        </h2>
+
+        <div className="space-y-3">
+          <div className="flex justify-between">
+            <span className="text-gray-600">Items:</span>
+            <span className="font-medium">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Subtotal:</span>
+            <span className="font-medium">${subtotal.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Tax (8%):</span>
+            <span className="font-medium">${tax.toFixed(2)}</span>
+          </div>
+          <div className="border-t pt-3">
+            <div className="flex justify-between">
+              <span className="text-lg font-semibold">Total:</span>
+              <span className="text-lg font-bold text-blue-600">${total.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 space-y-3">
+          <button
+            onClick={handleCompleteSale}
+            disabled={cart.length === 0}
+            className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
+          >
+            Complete Sale
+          </button>
+          
+          {cart.length > 0 && (
+            <button
+              onClick={clearCart}
+              className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Clear Cart
+            </button>
+          )}
+        </div>
+
+        <div className="mt-4 text-sm text-gray-500">
+          <p>Cashier: {cashierName}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Checkout;
