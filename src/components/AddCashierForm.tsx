@@ -15,7 +15,10 @@ const schema = yup.object({
   password: yup.string().required('Password is required').min(6, 'Password must be at least 6 characters'),
 });
 
-type FormData = yup.InferType<typeof schema>;
+type FormData = {
+  name: string;
+  password: string;
+};
 
 const AddCashierForm = () => {
   const { addCashier } = useStore();
