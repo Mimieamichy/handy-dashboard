@@ -1,22 +1,23 @@
 
 import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { useStore } from '../store/useStore';
-import { ShoppingCart, BarChart3, Package, Users, Settings } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { ShoppingCart, BarChart3, Package, LogOut, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const Layout = () => {
   const location = useLocation();
-  const { currentRole, setRole, cashierName, setCashierName } = useStore();
+  const { profile, signOut } = useAuth();
 
-  const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setRole(e.target.value as 'admin' | 'cashier');
-  };
-
-  const handleCashierNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCashierName(e.target.value);
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   const isActive = (path: string) => location.pathname === path;
+
+  if (!profile) {
+    return null; // Will be handled by ProtectedRoute
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -27,29 +28,22 @@ const Layout = () => {
             <div className="flex items-center space-x-4">
               <h1 className="text-xl font-bold">POS System</h1>
               <div className="flex items-center space-x-2">
-                <label className="text-sm font-medium">Role:</label>
-                <select 
-                  value={currentRole} 
-                  onChange={handleRoleChange}
-                  className="bg-slate-700 text-white px-3 py-1 rounded-md text-sm border border-slate-600"
-                >
-                  <option value="cashier">Cashier</option>
-                  <option value="admin">Admin</option>
-                </select>
+                <User size={16} />
+                <span className="text-sm">{profile.full_name || 'User'}</span>
+                <span className="bg-slate-700 px-2 py-1 rounded text-xs font-medium">
+                  {profile.role}
+                </span>
               </div>
-              {currentRole === 'cashier' && (
-                <div className="flex items-center space-x-2">
-                  <label className="text-sm font-medium">Cashier:</label>
-                  <input
-                    type="text"
-                    value={cashierName}
-                    onChange={handleCashierNameChange}
-                    className="bg-slate-700 text-white px-3 py-1 rounded-md text-sm border border-slate-600"
-                    placeholder="Enter name"
-                  />
-                </div>
-              )}
             </div>
+            <Button
+              onClick={handleSignOut}
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-slate-700"
+            >
+              <LogOut size={16} className="mr-2" />
+              Sign Out
+            </Button>
           </div>
         </div>
       </header>
@@ -70,7 +64,7 @@ const Layout = () => {
               <span>Catalog</span>
             </Link>
             
-            {currentRole === 'cashier' && (
+            {profile.role === 'cashier' && (
               <Link
                 to="/checkout"
                 className={`flex items-center space-x-2 py-4 px-1 border-b-2 text-sm font-medium transition-colors ${
@@ -84,7 +78,7 @@ const Layout = () => {
               </Link>
             )}
             
-            {currentRole === 'admin' && (
+            {profile.role === 'admin' && (
               <Link
                 to="/admin"
                 className={`flex items-center space-x-2 py-4 px-1 border-b-2 text-sm font-medium transition-colors ${
