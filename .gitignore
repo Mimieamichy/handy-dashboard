@@ -11,7 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
-src/integrations/supabase/client.ts
+
 
 
 # Editor directories and files
@@ -24,3 +24,9 @@ src/integrations/supabase/client.ts
 *.njsproj
 *.sln
 *.sw?
+
+
+
+# environment variables
+.env
+.env.*
