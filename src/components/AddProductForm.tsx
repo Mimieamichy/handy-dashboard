@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card } from '@/components/ui/card';
 import { Package, X } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+ import { toast } from '@/components/ui/sonner';
 
 const schema = yup.object({
   name: yup.string().required('Product name is required').min(2, 'Name must be at least 2 characters'),
@@ -38,12 +40,32 @@ const AddProductForm = ({ onClose }: AddProductFormProps) => {
     },
   });
 
-  const onSubmit = (data: FormData) => {
-    addProduct(data);
+  const onSubmit = async (data: FormData) => {
+  try {
+    const { error } = await supabase.from('products').insert([
+      {
+        name: data.name,
+        category: data.category,
+        stock: data.stock,
+      }
+    ]);
+
+   if (error) {
+  console.error('Supabase error:', error.message, error.details);
+  throw error;
+}
+
     form.reset();
-    alert('Product added successfully!');
+   
+    toast.success('Product added successfully!');
     onClose();
-  };
+  } catch (err) {
+    console.error('Error adding product:', err);
+   
+    toast.error('Failed to add product.');
+  }
+};
+
 
   return (
     <Card className="p-6">

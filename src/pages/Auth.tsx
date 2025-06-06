@@ -1,39 +1,39 @@
-
-import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { LogIn, ShoppingCart } from 'lucide-react';
+import React, { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { LogIn, ShoppingCart } from "lucide-react";
 
 const Auth = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  
+  const [error, setError] = useState("");
+
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       const { error } = await signIn(email, password);
       if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          setError('Invalid email or password. Please try again.');
+        if (error.message.includes("Invalid login credentials")) {
+          setError("Invalid email or password. Please try again.");
         } else {
           setError(error.message);
         }
       } else {
-        navigate('/catalog');
+         console.log('Login successful, navigating...');
+        navigate("/catalog");
       }
     } catch (err: any) {
-      setError('An unexpected error occurred. Please try again.');
+      setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -47,14 +47,15 @@ const Auth = () => {
             <ShoppingCart className="h-12 w-12 text-blue-600" />
           </div>
           <h2 className="text-3xl font-bold text-gray-900">POS System</h2>
-          <p className="mt-2 text-gray-600">
-            Sign in to your account
-          </p>
+          <p className="mt-2 text-gray-600">Sign in to your account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700"
+            >
               Email Address
             </label>
             <Input
@@ -69,7 +70,10 @@ const Auth = () => {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
               Password
             </label>
             <Input
@@ -89,13 +93,9 @@ const Auth = () => {
             </div>
           )}
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={loading}
-          >
+          <Button type="submit" className="w-full" disabled={loading}>
             {loading ? (
-              'Signing in...'
+              "Signing in..."
             ) : (
               <>
                 <LogIn className="mr-2 h-4 w-4" />

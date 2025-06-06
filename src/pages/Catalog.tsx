@@ -1,14 +1,57 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { Search, Package, Plus } from 'lucide-react';
 import AddProductForm from '../components/AddProductForm';
+import { supabase } from '@/integrations/supabase/client';
+ import { useSession } from '@supabase/auth-helpers-react';
+ import { toast } from '@/components/ui/sonner';
 
 const Catalog = () => {
-  const { products, currentRole, addToCart } = useStore();
+
+const session = useSession();
+const { addToCart } = useStore();
+const [userRole, setUserRole] = useState<string | null>(null);
+
+
+
+  const [products, setProducts] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showAddForm, setShowAddForm] = useState(false);
+
+  useEffect(() => {
+  const fetchUserRole = async () => {
+    if (!session?.user?.id) return;
+
+    const { data, error } = await supabase
+      .from('profiles') // 🔁 adjust table name if needed
+      .select('role')
+      .eq('id', session.user.id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching user role:', error);
+    } else {
+      setUserRole(data.role);
+    }
+  };
+
+  fetchUserRole();
+}, [session]);
+
+
+  // ✅ Fetch products from Supabase
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const { data, error } = await supabase.from('products').select('*');
+      if (error) {
+        console.error('Failed to fetch products:', error);
+      } else {
+        setProducts(data);
+      }
+    };
+    fetchProducts();
+  }, [showAddForm]); // refetch when modal closes (after add)
 
   const categories = ['all', ...Array.from(new Set(products.map(p => p.category)))];
 
@@ -28,10 +71,13 @@ const Catalog = () => {
     addToCart({
       productId: product.id,
       productName: product.name,
-      price: 0, // Default price, cashier will set this in checkout
-      quantity: 1
+      price: 0,
+      quantity: 1,
+    }); 
+    toast.success(`${product.name} added to cart!`, {
+      duration: 3000,
+      position: 'top-right',
     });
-    alert(`${product.name} added to cart!`);
   };
 
   return (
@@ -42,8 +88,8 @@ const Catalog = () => {
           <h1 className="text-2xl font-bold text-gray-900">Product Catalog</h1>
           <p className="text-gray-600">Browse and manage your inventory</p>
         </div>
-        {currentRole === 'admin' && (
-          <button 
+        {userRole === 'admin' && (
+          <button
             onClick={() => setShowAddForm(true)}
             className="mt-4 sm:mt-0 flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
@@ -101,20 +147,20 @@ const Catalog = () => {
                   </div>
                   <Package className="text-gray-400" size={20} />
                 </div>
-                
+
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">Stock:</span>
                     <span className="text-lg font-bold text-gray-900">{product.stock}</span>
                   </div>
-                  
+
                   <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stockStatus.color}`}>
                     {stockStatus.label}
                   </div>
                 </div>
 
-                {currentRole === 'cashier' && product.stock > 0 && (
-                  <button 
+                {userRole === 'cashier' && product.stock > 0 && (
+                  <button
                     onClick={() => handleAddToCart(product)}
                     className="w-full mt-4 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                   >
