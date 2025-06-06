@@ -53,7 +53,7 @@ const CashierList = () => {
               className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
             >
               <div>
-                <p className="font-medium text-gray-900">{cashier.full_name || 'Unnamed'}</p>
+                <p className="font-medium text-gray-900 capitalize">{cashier.full_name || 'Unnamed'}</p>
                 <p className="text-sm text-gray-600">
                   Added: {format(new Date(cashier.created_at), 'MMM dd, yyyy')}
                 </p>

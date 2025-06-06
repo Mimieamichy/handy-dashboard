@@ -19,7 +19,6 @@ export interface Sale {
   id: string;
   items: CartItem[];
   subtotal: number;
-  tax: number;
   total: number;
   cashier: string;
   timestamp: Date;
@@ -85,7 +84,6 @@ const initialSales: Sale[] = [
       { productId: '2', productName: 'Wireless Mouse', price: 29.99, quantity: 2 }
     ],
     subtotal: 959.97,
-    tax: 76.80,
     total: 1036.77,
     cashier: 'John Doe',
     timestamp: new Date(Date.now() - 86400000) // 1 day ago
@@ -96,7 +94,6 @@ const initialSales: Sale[] = [
       { productId: '3', productName: 'Office Chair', price: 199.99, quantity: 1 }
     ],
     subtotal: 199.99,
-    tax: 16.00,
     total: 215.99,
     cashier: 'Jane Smith',
     timestamp: new Date(Date.now() - 43200000) // 12 hours ago

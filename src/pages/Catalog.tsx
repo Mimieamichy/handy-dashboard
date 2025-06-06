@@ -142,7 +142,7 @@ const [userRole, setUserRole] = useState<string | null>(null);
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">{product.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1 capitalize">{product.name}</h3>
                     <p className="text-sm text-gray-500">{product.category}</p>
                   </div>
                   <Package className="text-gray-400" size={20} />

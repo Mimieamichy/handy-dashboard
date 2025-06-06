@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
+import { toast} from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "../store/useStore";
 import { useForm } from "react-hook-form";
@@ -23,6 +24,29 @@ const schema = yup.object({
 const Checkout = () => {
   const [fetchedProducts, setFetchedProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
+  const sessions = useSession();
+const [cashierName, setCashierName] = useState<string>('');
+
+useEffect(() => {
+  const fetchCashierName = async () => {
+    if (!sessions?.user?.id) return;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', sessions.user.id)
+      .single();
+
+    if (error) {
+      console.error('Failed to fetch cashier name:', error);
+    } else {
+      setCashierName(data.full_name || 'Unnamed Cashier');
+    }
+  };
+
+  fetchCashierName();
+}, [sessions]);
+
 
   const session = useSession();
   const user = session?.user;
@@ -52,7 +76,7 @@ const Checkout = () => {
     clearCart,
     completeSale,
     setCurrentSale,
-    cashierName,
+    
   } = useStore();
 
   const [selectedProductId, setSelectedProductId] = useState("");
@@ -69,27 +93,24 @@ const Checkout = () => {
     defaultValues: { price: 0, quantity: 1 },
   });
 
-  
-
   const onAddProduct = (data: { price: number; quantity: number }) => {
-  if (!selectedProductId) return;
+    if (!selectedProductId) return;
 
-  const product = fetchedProducts.find(p => p.id === selectedProductId); // <-- Use fetchedProducts
+    const product = fetchedProducts.find((p) => p.id === selectedProductId); // <-- Use fetchedProducts
 
-  if (!product) return;
+    if (!product) return;
 
-  addToCart({
-    productId: product.id,
-    productName: product.name,
-    price: data.price,
-    quantity: data.quantity
-  });
+    addToCart({
+      productId: product.id,
+      productName: product.name,
+      price: data.price,
+      quantity: data.quantity,
+    });
 
-  reset();
-  setSelectedProductId('');
-  setIsAddingProduct(false);
-};
-
+    reset();
+    setSelectedProductId("");
+    setIsAddingProduct(false);
+  };
 
   const updateQuantity = (productId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
@@ -109,91 +130,98 @@ const Checkout = () => {
     (sum, item) => sum + item.price * item.quantity,
     0
   );
-  const taxRate = 0.08; // 8% tax
-  const tax = subtotal * taxRate;
-  const total = subtotal + tax;
+  const total = subtotal;
 
   const handleCompleteSale = async () => {
-  if (cart.length === 0 || !user) return;
-
-  const saleData = {
-    user_id: user.id,
-    total_amount: total,
-  };
-
-  // 1. Insert into `sales`
-  const { data: sale, error: saleError } = await supabase
-    .from("sales")
-    .insert(saleData)
-    .select()
-    .single();
-
-  if (saleError || !sale) {
-    console.error("Failed to create sale:", saleError);
+    if (cart.length === 0 || !user) return;
+    
+  if (total === 0) {
+    toast.error("Cannot complete sale with total amount of #0.");
     return;
   }
 
-  // 2. Prepare sale_items
-  const saleItems = cart.map((item) => ({
-    sale_id: sale.id,
-    product_id: item.productId,
-    quantity: item.quantity,
-    unit_price: item.price,
-    subtotal: item.price * item.quantity,
-  }));
+    const saleData = {
+      user_id: user.id,
+      total_amount: total,
+    };
 
-  // 3. Insert into sale_items
-  const { error: itemsError } = await supabase
-    .from("sale_items")
-    .insert(saleItems);
-
-  if (itemsError) {
-    console.error("Failed to insert sale items:", itemsError);
-    return;
-  }
-
-  // ✅ 4. Update product stock (here's the part you asked for)
-  for (const item of cart) {
-    const { data: product, error: fetchError } = await supabase
-      .from("products")
-      .select("stock")
-      .eq("id", item.productId)
+    // 1. Insert into `sales`
+    const { data: sale, error: saleError } = await supabase
+      .from("sales")
+      .insert(saleData)
+      .select()
       .single();
 
-    if (fetchError || !product) {
-      console.error(`Failed to fetch stock for ${item.productId}:`, fetchError);
-      continue;
+    if (saleError || !sale) {
+      console.error("Failed to create sale:", saleError);
+      return;
     }
 
-    const newStock = product.stock - item.quantity;
+    // 2. Prepare sale_items
+    const saleItems = cart.map((item) => ({
+      sale_id: sale.id,
+      product_id: item.productId,
+      quantity: item.quantity,
+      unit_price: item.price,
+      subtotal: item.price * item.quantity,
+    }));
 
-    const { error: updateError } = await supabase
-      .from("products")
-      .update({ stock: newStock })
-      .eq("id", item.productId);
+    // 3. Insert into sale_items
+    const { error: itemsError } = await supabase
+      .from("sale_items")
+      .insert(saleItems);
 
-    if (updateError) {
-      console.error(`Failed to update stock for ${item.productId}:`, updateError);
+    if (itemsError) {
+      console.error("Failed to insert sale items:", itemsError);
+      return;
     }
-  }
 
-  // 5. Local state update
-  const saleRecord = {
-    items: [...cart],
-    subtotal,
-    tax,
-    total,
-    cashier: cashierName,
-    timestamp: new Date(),
-    id: sale.id,
+    // ✅ 4. Update product stock (here's the part you asked for)
+    for (const item of cart) {
+      const { data: product, error: fetchError } = await supabase
+        .from("products")
+        .select("stock")
+        .eq("id", item.productId)
+        .single();
+
+      if (fetchError || !product) {
+        console.error(
+          `Failed to fetch stock for ${item.productId}:`,
+          fetchError
+        );
+        continue;
+      }
+
+      const newStock = product.stock - item.quantity;
+
+      const { error: updateError } = await supabase
+        .from("products")
+        .update({ stock: newStock })
+        .eq("id", item.productId);
+
+      if (updateError) {
+        console.error(
+          `Failed to update stock for ${item.productId}:`,
+          updateError
+        );
+      }
+    }
+
+    // 5. Local state update
+    const saleRecord = {
+      items: [...cart],
+      subtotal,
+      total,
+      cashier: cashierName,
+      timestamp: new Date(),
+      id: sale.id,
+    };
+
+    completeSale(saleRecord);
+    setCurrentSale(saleRecord);
+    clearCart();
+    navigate(`/receipt/${sale.id}`);
   };
-
-  completeSale(saleRecord);
-  setCurrentSale(saleRecord);
-  clearCart();
-  navigate("/receipt");
-};
-
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -239,7 +267,7 @@ const Checkout = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Price ($)
+                    Price (#)
                   </label>
                   <input
                     type="number"
@@ -315,7 +343,7 @@ const Checkout = () => {
                     <div className="mt-2 grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs text-gray-500 mb-1">
-                          Price ($)
+                          Price (#)
                         </label>
                         <input
                           type="number"
@@ -368,7 +396,7 @@ const Checkout = () => {
                   </div>
                   <div className="ml-4 text-right">
                     <p className="text-lg font-semibold">
-                      ${(item.price * item.quantity).toFixed(2)}
+                      #{(item.price * item.quantity).toFixed(2)}
                     </p>
                     <button
                       onClick={() => removeFromCart(item.productId)}
@@ -399,20 +427,8 @@ const Checkout = () => {
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Subtotal:</span>
-            <span className="font-medium">${subtotal.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Tax (8%):</span>
-            <span className="font-medium">${tax.toFixed(2)}</span>
-          </div>
-          <div className="border-t pt-3">
-            <div className="flex justify-between">
-              <span className="text-lg font-semibold">Total:</span>
-              <span className="text-lg font-bold text-blue-600">
-                ${total.toFixed(2)}
-              </span>
-            </div>
+            <span className="text-gray-600">Total:</span>
+            <span className="font-bold text-blue-600">#{total.toFixed(2)}</span>
           </div>
         </div>
 

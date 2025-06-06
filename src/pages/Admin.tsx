@@ -24,9 +24,9 @@ import {
 import AddCashierForm from "../components/AddCashierForm";
 import CashierList from "../components/CashierList";
 import { supabase } from "@/integrations/supabase/client";
-import { saveAs } from 'file-saver';
-import Papa from 'papaparse';
-import { toast} from "@/components/ui/sonner";
+import { saveAs } from "file-saver";
+import Papa from "papaparse";
+import { toast } from "@/components/ui/sonner";
 
 const Admin = () => {
   const [sales, setSales] = useState<any[]>([]);
@@ -87,7 +87,7 @@ const Admin = () => {
         setProducts(productData);
       }
 
-      // Fetch sales with embedded sale items
+      // Fetch sales + sale_items + cashier profile
       const { data: saleData, error: saleError } = await supabase
         .from("sales")
         .select(
@@ -97,6 +97,9 @@ const Admin = () => {
           product_id,
           quantity,
           unit_price
+        ),
+        profiles (
+          full_name
         )
       `
         )
@@ -105,7 +108,6 @@ const Admin = () => {
       if (saleError) {
         console.error("Error fetching sales:", saleError);
       } else {
-        // Format for UI use
         const formattedSales = saleData.map((sale: any) => ({
           id: sale.id,
           items: sale.sale_items.map((item: any) => ({
@@ -116,7 +118,7 @@ const Admin = () => {
           subtotal: sale.total_amount / 1.08,
           tax: sale.total_amount * 0.08,
           total: sale.total_amount,
-          cashier: "Unknown", // optionally fetch user name from profiles if needed
+          cashier: sale.profiles?.full_name,
           timestamp: new Date(sale.created_at),
         }));
 
@@ -131,7 +133,7 @@ const Admin = () => {
   const totalSales = sales.reduce((sum, sale) => sum + sale.total, 0);
   const totalTransactions = sales.length;
   const averageTransaction = totalSales / totalTransactions || 0;
-  const totalProducts = products.length;
+
   const lowStockProducts = products.filter((p) => p.stock < 10).length;
 
   // Sales by day (last 7 days)
@@ -172,47 +174,54 @@ const Admin = () => {
   const COLORS = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"];
 
   const handleExport = async () => {
-  try {
-    const { data: sales, error } = await supabase
-      .from("sales")
-      .select(`
-        id,
-        total_amount,
-        created_at,
-        sale_items (
-          product_id,
-          quantity,
-          unit_price,
-          products ( name )
-        )
-      `);
+    try {
+      const { data: sales, error } = await supabase.from("sales").select(`
+    id,
+    total_amount,
+    created_at,
+    user_id,
+    sale_items (
+      product_id,
+      quantity,
+      unit_price,
+      products ( name )
+    )
+  `);
 
-    if (error) {
-      console.error("Error fetching sales:", error);
-      return alert("Failed to fetch sales data.");
+      if (error) {
+        console.error("Error fetching sales:", error);
+        return alert("Failed to fetch sales data.");
+      }
+
+      // Fetch all cashier profiles
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name");
+
+      const getCashierName = (user_id: string) =>
+        profiles?.find((p) => p.id === user_id)?.full_name || "Unknown";
+
+      const flattened = sales.flatMap((sale) =>
+        sale.sale_items.map((item) => ({
+          SaleID: sale.id,
+          Product: item.products?.name || "Unknown",
+          Quantity: item.quantity,
+          UnitPrice: item.unit_price,
+          Subtotal: (item.unit_price * item.quantity).toFixed(2),
+          TotalSaleAmount: sale.total_amount.toFixed(2),
+          Cashier: getCashierName(sale.user_id),
+          Date: new Date(sale.created_at).toLocaleString(),
+        }))
+      );
+
+      const csv = Papa.unparse(flattened);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      saveAs(blob, `sales_export_${Date.now()}.csv`);
+    } catch (err) {
+      console.error("Export error:", err);
+      toast.error("Failed to export data. Please try again.");
     }
-
-    const flattened = sales.flatMap((sale) =>
-      sale.sale_items.map((item) => ({
-        SaleID: sale.id,
-        Product: item.products?.name || 'Unknown',
-        Quantity: item.quantity,
-        UnitPrice: item.unit_price,
-        Subtotal: (item.unit_price * item.quantity).toFixed(2),
-        TotalSaleAmount: sale.total_amount.toFixed(2),
-        Date: new Date(sale.created_at).toLocaleString(),
-      }))
-    );
-
-    const csv = Papa.unparse(flattened);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    saveAs(blob, `sales_export_${Date.now()}.csv`);
-  } catch (err) {
-    console.error("Export error:", err);
-
-    toast.error("Failed to export data. Please try again.");
-  }
-};
+  };
 
   return (
     <div className="space-y-8">
@@ -246,7 +255,7 @@ const Admin = () => {
             <div>
               <p className="text-sm text-gray-600">Total Sales</p>
               <p className="text-2xl font-bold text-gray-900">
-                ${totalSales.toFixed(2)}
+                #{totalSales.toFixed(2)}
               </p>
             </div>
             <div className="bg-green-100 p-3 rounded-full">
@@ -274,7 +283,7 @@ const Admin = () => {
             <div>
               <p className="text-sm text-gray-600">Avg. Transaction</p>
               <p className="text-2xl font-bold text-gray-900">
-                ${averageTransaction.toFixed(2)}
+                #{averageTransaction.toFixed(2)}
               </p>
             </div>
             <div className="bg-purple-100 p-3 rounded-full">
@@ -374,7 +383,7 @@ const Admin = () => {
           </h3>
           <div className="space-y-4">
             {sales
-              .slice(-5)
+              .slice(10)
               .reverse()
               .map((sale) => (
                 <div
@@ -383,14 +392,14 @@ const Admin = () => {
                 >
                   <div>
                     <p className="font-medium text-gray-900">#{sale.id}</p>
-                    <p className="text-sm text-gray-600">{sale.user_id}</p>
+                    <p className="text-sm text-gray-600">{sale.cashier}</p>
                     <p className="text-xs text-gray-500">
                       {format(sale.timestamp, "MMM dd, hh:mm a")}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-gray-900">
-                      ${sale.total.toFixed(2)}
+                      #{sale.total.toFixed(2)}
                     </p>
                     <p className="text-sm text-gray-600">
                       {sale.items.length} items

@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ShoppingCart, BarChart3, Package, LogOut, User } from 'lucide-react';
@@ -26,10 +25,10 @@ const Layout = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <h1 className="text-xl font-bold">POS System</h1>
+              <h1 className="text-xl font-bold">DEL POS System</h1>
               <div className="flex items-center space-x-2">
                 <User size={16} />
-                <span className="text-sm">{profile.full_name || 'User'}</span>
+                <span className="text-sm capitalize">{profile.full_name || 'User'}</span>
                 <span className="bg-slate-700 px-2 py-1 rounded text-xs font-medium">
                   {profile.role}
                 </span>

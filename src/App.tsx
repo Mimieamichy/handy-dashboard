@@ -30,7 +30,7 @@ return (
               <Route index element={<Navigate to="/catalog" replace />} />
               <Route path="catalog" element={<Catalog />} />
               <Route path="checkout" element={<ProtectedRoute requiredRole="cashier"><Checkout /></ProtectedRoute>} />
-              <Route path="receipt" element={<ProtectedRoute requiredRole="cashier"><Receipt /></ProtectedRoute>} />
+              <Route path="/receipt/:id" element={<ProtectedRoute requiredRole="cashier"><Receipt /></ProtectedRoute>} />
               <Route path="admin" element={<ProtectedRoute requiredRole="admin"><Admin /></ProtectedRoute>} />
             </Route>
           </Routes>
