@@ -11,7 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
-C:\Users\HomePC\Desktop\programs\handy-dashboard\src\integrations\supabase\client.ts
+src/integrations/supabase/client.ts
+
 
 # Editor directories and files
 .vscode/*
