@@ -26,7 +26,6 @@ dist-ssr
 *.sw?
 
 
-
 # environment variables
 .env
 .env.*

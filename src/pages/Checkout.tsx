@@ -135,6 +135,7 @@ useEffect(() => {
   const handleCompleteSale = async () => {
     if (cart.length === 0 || !user) return;
     
+    
   if (total === 0) {
     toast.error("Cannot complete sale with total amount of #0.");
     return;
