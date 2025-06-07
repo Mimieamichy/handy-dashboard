@@ -1,4 +1,3 @@
-
 import React, { useState,useEffect } from "react";
 import { toast} from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
@@ -101,7 +100,11 @@ useEffect(() => {
 
     if (!product) return;
 
-    
+    // Check if price is below minimum selling price
+    if (product.min_selling_price && data.price < product.min_selling_price) {
+      toast.error(`Price cannot be below minimum selling price of #${product.min_selling_price.toFixed(2)}`);
+      return;
+    }
 
     addToCart({
       productId: product.id,
@@ -123,26 +126,8 @@ useEffect(() => {
     updateCartItem(productId, { quantity: newQuantity });
   };
 
-  const updatePrice = async (productId: string, newPrice: number) => {
+  const updatePrice = (productId: string, newPrice: number) => {
     if (newPrice >= 0) {
-      // Fetch product details to check minimum selling price
-      const { data: product, error } = await supabase
-        .from("products")
-        .select("min_selling_price, name")
-        .eq("id", productId)
-        .single();
-
-      if (error) {
-        console.error("Error fetching product:", error);
-        return;
-      }
-
-      // Check if new price is below minimum selling price
-      if (product.min_selling_price && newPrice < product.min_selling_price) {
-        toast.error(`Price for ${product.name} cannot be below minimum selling price of #${product.min_selling_price.toFixed(2)}`);
-        return;
-      }
-
       updateCartItem(productId, { price: newPrice });
     }
   };
