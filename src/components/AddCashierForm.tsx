@@ -15,14 +15,14 @@ import { supabase } from '@/integrations/supabase/client';
 
 const schema = yup.object({
   full_name: yup.string().required('Name is required').min(2, 'Name must be at least 2 characters'),
-  email: yup.string().required('Email is required').email('Email is invalid'), // <-- add this
+  email: yup.string().required('Email is required').email('Email is invalid'),
   password: yup.string().required('Password is required').min(6, 'Password must be at least 6 characters'),
 });
 
 
 type FormData = {
   full_name: string;
-  email: string; // Optional field for email
+  email: string;
   password: string;
 };
 
@@ -33,7 +33,7 @@ const AddCashierForm = () => {
   resolver: yupResolver(schema),
   defaultValues: {
     full_name: '',
-    email: '', // <-- Add this
+    email: '',
     password: '',
   },
 });
@@ -59,12 +59,12 @@ const AddCashierForm = () => {
       return;
     }
 
-    // 2. Optional: Insert into 'profiles' table
+    // 2. Insert into 'profiles' table with correct schema
     const { error: insertError } = await supabase.from('profiles').insert([
       {
-        id: user.id,        // user UUID from Supabase Auth
-        name: data.full_name,
-        email: data.email,
+        id: user.id,
+        full_name: data.full_name,
+        role: 'cashier',
         created_at: new Date().toISOString(),
       },
     ]);
