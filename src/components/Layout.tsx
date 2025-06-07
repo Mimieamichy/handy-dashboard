@@ -1,7 +1,7 @@
 
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ShoppingCart, BarChart3, Package, LogOut, User } from 'lucide-react';
+import { ShoppingCart, BarChart3, Package, LogOut, User, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Layout = () => {
@@ -78,17 +78,30 @@ const Layout = () => {
             )}
             
             {profile.role === 'admin' && (
-              <Link
-                to="/admin"
-                className={`flex items-center space-x-2 py-4 px-1 border-b-2 text-sm font-medium transition-colors ${
-                  isActive('/admin')
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <BarChart3 size={18} />
-                <span>Dashboard</span>
-              </Link>
+              <>
+                <Link
+                  to="/stockkeeping"
+                  className={`flex items-center space-x-2 py-4 px-1 border-b-2 text-sm font-medium transition-colors ${
+                    isActive('/stockkeeping')
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <ClipboardList size={18} />
+                  <span>Stockkeeping</span>
+                </Link>
+                <Link
+                  to="/admin"
+                  className={`flex items-center space-x-2 py-4 px-1 border-b-2 text-sm font-medium transition-colors ${
+                    isActive('/admin')
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <BarChart3 size={18} />
+                  <span>Dashboard</span>
+                </Link>
+              </>
             )}
           </div>
         </div>

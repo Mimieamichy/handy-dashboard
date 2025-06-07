@@ -11,33 +11,35 @@ import Checkout from "./pages/Checkout";
 import Receipt from "./pages/Receipt";
 import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
+import Stockkeeping from "./pages/Stockkeeping";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
 const App = () => {
-
-return (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-              <Route index element={<Navigate to="/catalog" replace />} />
-              <Route path="catalog" element={<Catalog />} />
-              <Route path="checkout" element={<ProtectedRoute requiredRole="cashier"><Checkout /></ProtectedRoute>} />
-              <Route path="/receipt/:id" element={<ProtectedRoute requiredRole="cashier"><Receipt /></ProtectedRoute>} />
-              <Route path="admin" element={<ProtectedRoute requiredRole="admin"><Admin /></ProtectedRoute>} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>)
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+                <Route index element={<Navigate to="/catalog" replace />} />
+                <Route path="catalog" element={<Catalog />} />
+                <Route path="checkout" element={<ProtectedRoute requiredRole="cashier"><Checkout /></ProtectedRoute>} />
+                <Route path="/receipt/:id" element={<ProtectedRoute requiredRole="cashier"><Receipt /></ProtectedRoute>} />
+                <Route path="admin" element={<ProtectedRoute requiredRole="admin"><Admin /></ProtectedRoute>} />
+                <Route path="stockkeeping" element={<ProtectedRoute requiredRole="admin"><Stockkeeping /></ProtectedRoute>} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
 };
 
 export default App;

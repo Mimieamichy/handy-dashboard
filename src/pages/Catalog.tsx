@@ -3,8 +3,8 @@ import { useStore } from '../store/useStore';
 import { Search, Package, Plus } from 'lucide-react';
 import AddProductForm from '../components/AddProductForm';
 import { supabase } from '@/integrations/supabase/client';
- import { useSession } from '@supabase/auth-helpers-react';
- import { toast } from '@/components/ui/sonner';
+import { useSession } from '@supabase/auth-helpers-react';
+import { toast } from '@/components/ui/sonner';
 
 const Catalog = () => {
 
@@ -153,6 +153,30 @@ const [userRole, setUserRole] = useState<string | null>(null);
                     <span className="text-sm font-medium text-gray-700">Stock:</span>
                     <span className="text-lg font-bold text-gray-900">{product.stock}</span>
                   </div>
+
+                  {userRole === 'cashier' && product.min_selling_price && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700">Min Price:</span>
+                      <span className="text-sm font-semibold text-green-600">#{product.min_selling_price.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  {userRole === 'admin' && (
+                    <div className="space-y-2">
+                      {product.purchase_price && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-700">Purchase Price:</span>
+                          <span className="text-sm text-gray-600">#{product.purchase_price.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {product.min_selling_price && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-700">Min Selling Price:</span>
+                          <span className="text-sm font-semibold text-green-600">#{product.min_selling_price.toFixed(2)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stockStatus.color}`}>
                     {stockStatus.label}

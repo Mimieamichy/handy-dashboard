@@ -14,8 +14,12 @@ export type Database = {
           category: string
           created_at: string
           id: string
+          last_purchase_date: string | null
+          last_purchase_quantity: number | null
+          min_selling_price: number | null
           name: string
-          price: number
+          price: number | null
+          purchase_price: number | null
           stock: number
           updated_at: string
         }
@@ -23,8 +27,12 @@ export type Database = {
           category: string
           created_at?: string
           id?: string
+          last_purchase_date?: string | null
+          last_purchase_quantity?: number | null
+          min_selling_price?: number | null
           name: string
-          price: number
+          price?: number | null
+          purchase_price?: number | null
           stock?: number
           updated_at?: string
         }
@@ -32,8 +40,12 @@ export type Database = {
           category?: string
           created_at?: string
           id?: string
+          last_purchase_date?: string | null
+          last_purchase_quantity?: number | null
+          min_selling_price?: number | null
           name?: string
-          price?: number
+          price?: number | null
+          purchase_price?: number | null
           stock?: number
           updated_at?: string
         }
@@ -62,6 +74,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      purchase_history: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          min_selling_price: number
+          product_id: string
+          purchase_date: string
+          purchase_price_per_unit: number
+          quantity_purchased: number
+          total_purchase_cost: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          min_selling_price: number
+          product_id: string
+          purchase_date: string
+          purchase_price_per_unit: number
+          quantity_purchased: number
+          total_purchase_cost: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          min_selling_price?: number
+          product_id?: string
+          purchase_date?: string
+          purchase_price_per_unit?: number
+          quantity_purchased?: number
+          total_purchase_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sale_items: {
         Row: {
@@ -124,7 +180,15 @@ export type Database = {
           total_amount?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sales_user_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
