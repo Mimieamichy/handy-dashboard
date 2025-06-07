@@ -1,3 +1,4 @@
+
 import React, { useState,useEffect } from "react";
 import { toast} from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
@@ -100,6 +101,8 @@ useEffect(() => {
 
     if (!product) return;
 
+    
+
     addToCart({
       productId: product.id,
       productName: product.name,
@@ -120,8 +123,26 @@ useEffect(() => {
     updateCartItem(productId, { quantity: newQuantity });
   };
 
-  const updatePrice = (productId: string, newPrice: number) => {
+  const updatePrice = async (productId: string, newPrice: number) => {
     if (newPrice >= 0) {
+      // Fetch product details to check minimum selling price
+      const { data: product, error } = await supabase
+        .from("products")
+        .select("min_selling_price, name")
+        .eq("id", productId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching product:", error);
+        return;
+      }
+
+      // Check if new price is below minimum selling price
+      if (product.min_selling_price && newPrice < product.min_selling_price) {
+        toast.error(`Price for ${product.name} cannot be below minimum selling price of #${product.min_selling_price.toFixed(2)}`);
+        return;
+      }
+
       updateCartItem(productId, { price: newPrice });
     }
   };
@@ -132,9 +153,30 @@ useEffect(() => {
   );
   const total = subtotal;
 
+  const validateCartPrices = async () => {
+    for (const item of cart) {
+      const { data: product, error } = await supabase
+        .from("products")
+        .select("min_selling_price, name")
+        .eq("id", item.productId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching product:", error);
+        toast.error("Error validating product prices. Please try again.");
+        return false;
+      }
+
+      if (product.min_selling_price && item.price < product.min_selling_price) {
+        toast.error(`${product.name} price (#${item.price.toFixed(2)}) is below minimum selling price (#${product.min_selling_price.toFixed(2)}). Please adjust the price.`);
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleCompleteSale = async () => {
     if (cart.length === 0 || !user) return;
-    
     
   if (total === 0) {
     toast.error("Cannot complete sale with total amount of #0.");
@@ -157,6 +199,8 @@ useEffect(() => {
       console.error("Failed to create sale:", saleError);
       return;
     }
+
+    
 
     // 2. Prepare sale_items
     const saleItems = cart.map((item) => ({
@@ -192,6 +236,12 @@ useEffect(() => {
         );
         continue;
       }
+
+      // Check if price is below minimum selling price
+    if (product.min_selling_price && data.price < product.min_selling_price) {
+      toast.error(`Price cannot be below minimum selling price of #${product.min_selling_price.toFixed(2)}`);
+      return;
+    }
 
       const newStock = product.stock - item.quantity;
 
@@ -252,14 +302,21 @@ useEffect(() => {
                 </label>
                 <select
                   value={selectedProductId}
-                  onChange={(e) => setSelectedProductId(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedProductId(e.target.value);
+                    const product = fetchedProducts.find(p => p.id === e.target.value);
+                    if (product && product.min_selling_price) {
+                      setValue("price", product.min_selling_price);
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 >
                   <option value="">Select a product</option>
                   {fetchedProducts.map((product) => (
                     <option key={product.id} value={product.id}>
-                      {product.name} (Stock: {product.stock})
+                      {product.name} (Stock: {product.stock}) 
+                      {product.min_selling_price && ` - Min: #${product.min_selling_price.toFixed(2)}`}
                     </option>
                   ))}
                 </select>
@@ -282,6 +339,14 @@ useEffect(() => {
                       {errors.price.message}
                     </p>
                   )}
+                  {selectedProductId && (() => {
+                    const product = fetchedProducts.find(p => p.id === selectedProductId);
+                    return product?.min_selling_price && (
+                      <p className="text-green-600 text-xs mt-1">
+                        Min selling price: #{product.min_selling_price.toFixed(2)}
+                      </p>
+                    );
+                  })()}
                 </div>
 
                 <div>
