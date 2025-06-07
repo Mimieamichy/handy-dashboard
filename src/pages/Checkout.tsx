@@ -100,12 +100,6 @@ useEffect(() => {
 
     if (!product) return;
 
-    // Check if price is below minimum selling price
-    if (product.min_selling_price && data.price < product.min_selling_price) {
-      toast.error(`Price cannot be below minimum selling price of #${product.min_selling_price.toFixed(2)}`);
-      return;
-    }
-
     addToCart({
       productId: product.id,
       productName: product.name,
@@ -163,10 +157,16 @@ useEffect(() => {
   const handleCompleteSale = async () => {
     if (cart.length === 0 || !user) return;
     
-  if (total === 0) {
-    toast.error("Cannot complete sale with total amount of #0.");
-    return;
-  }
+    if (total === 0) {
+      toast.error("Cannot complete sale with total amount of #0.");
+      return;
+    }
+
+    // Validate all cart item prices against minimum selling prices
+    const pricesValid = await validateCartPrices();
+    if (!pricesValid) {
+      return;
+    }
 
     const saleData = {
       user_id: user.id,
@@ -184,8 +184,6 @@ useEffect(() => {
       console.error("Failed to create sale:", saleError);
       return;
     }
-
-    
 
     // 2. Prepare sale_items
     const saleItems = cart.map((item) => ({
@@ -221,12 +219,6 @@ useEffect(() => {
         );
         continue;
       }
-
-      // Check if price is below minimum selling price
-    if (product.min_selling_price && data.price < product.min_selling_price) {
-      toast.error(`Price cannot be below minimum selling price of #${product.min_selling_price.toFixed(2)}`);
-      return;
-    }
 
       const newStock = product.stock - item.quantity;
 
